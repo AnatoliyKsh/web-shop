@@ -1,9 +1,11 @@
-
+import React from 'react'
+import Products from './components/Products/Products'
+import NavigationBar from "./components/NavigationBar/NavigationBar";
 function App() {
   return (
     <div className="App">
-      <h1> work</h1>
-
+        <NavigationBar/>
+        <Products/>
     </div>
   );
 }
