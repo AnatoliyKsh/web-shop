@@ -5,6 +5,7 @@ import useStyles from './Styles'
 
 const Product = ({product})=>{
     const classes = useStyles();
+    console.log(product, onAddToCard);
     return (
         <Card className={classes.root}>
             <CardMedia className={classes.media} image={product.image} title={product.name}/>
@@ -21,7 +22,7 @@ const Product = ({product})=>{
                 </div>
                 <Typography variant="h2" color="textSecondary">{product.description} </Typography></CardContent>
                 <CardActions disableSpacing className={classes.cardActions}>
-                    <IconButton aria-label="add to Card">
+                    <IconButton aria-label="add to Card" onClick={()=>onAddToCard(product.id,1)}>
                         <AddShoppingCart/>
                     </IconButton>
 
