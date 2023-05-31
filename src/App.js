@@ -1,72 +1,113 @@
-import React, {useState, useEffect} from 'react'
-import Products from './components/Products/Products'
-import NavigationBar from "./components/NavigationBar/NavigationBar";
-import {commerce} from "./components/lib/commerce";
-import Cart from './components/Cart/Cart'
-import { BrowserRouter as Router, Routes , Route } from 'react-router-dom';
-import cartItem from "./components/Cart/CartItem/CartItem";
+import React, { useState, useEffect } from 'react';
+import { CssBaseline } from '@material-ui/core';
+import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
+
+import { NavigationBar, Products, Cart, Checkout } from './components';
+import { commerce } from './components/lib/commerce';
 
 const App = () => {
-    const [products, setProducts] = useState([])
+    const [mobileOpen, setMobileOpen] = React.useState(false);
+    const [products, setProducts] = useState([]);
     const [cart, setCart] = useState({});
-    const fetchProduct = async () => {
-        const {data} = await commerce.products.list();
+    const [order, setOrder] = useState({});
+    const [errorMessage, setErrorMessage] = useState('');
+
+    const fetchProducts = async () => {
+        const { data } = await commerce.products.list();
 
         setProducts(data);
-    }
-    const fetchCart = async ()=>{
+    };
+
+    const fetchCart = async () => {
         setCart(await commerce.cart.retrieve());
     };
-const handelAddToCart = async (productId, quantity)=>{
-        const cart = await commerce.cart.add(productId,quantity);
-        setCart(cart)
 
-}
+    const handleAddToCart = async (productId, quantity) => {
+        const item = await commerce.cart.add(productId, quantity);
 
-const handleUpgradeCartQty = async (productId, quantity)=>{
-    const {cart} = await commerce.cart.update(productId,{quantity})
-    setCart(cart)
-}
+        setCart(item.cart);
+    };
+
+    const handleUpdateCartQty = async (lineItemId, quantity) => {
+        const response = await commerce.cart.update(lineItemId, { quantity });
+
+        setCart(response.cart);
+    };
+
     const handleRemoveFromCart = async (lineItemId) => {
-        const {cart} = await commerce.cart.remove(lineItemId);
+        const response = await commerce.cart.remove(lineItemId);
 
-        setCart(cart);
+        setCart(response.cart);
     };
 
     const handleEmptyCart = async () => {
-        const {cart} = await commerce.cart.empty();
+        const response = await commerce.cart.empty();
 
-        setCart(cart);
+        setCart(response.cart);
+    };
 
+    const refreshCart = async () => {
+        const newCart = await commerce.cart.refresh();
 
+        setCart(newCart);
+    };
+
+    const handleCaptureCheckout = async (checkoutTokenId, newOrder) => {
+        try {
+            const incomingOrder = await commerce.checkout.capture(checkoutTokenId, newOrder);
+
+            setOrder(incomingOrder);
+
+            refreshCart();
+        } catch (error) {
+            setErrorMessage(error.data.error.message);
+        }
     };
 
     useEffect(() => {
-        fetchProduct();
+        fetchProducts();
         fetchCart();
     }, []);
-    console.log(cart);
+
+    const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
+
     return (
+
         <Router>
-        <div >
+            <div style={{ display: 'flex' }}>
+                <CssBaseline />
+                <NavigationBar totalItems={cart.total_items} handleDrawerToggle={handleDrawerToggle} />
+                <Routes>
+                    <Route exact path="/">
+                        <Route products={products} onAddToCart={handleAddToCart} handleUpdateCartQty />
+                    </Route>
+                    <Route exact path="/Cart">
+                        <Route cart={cart} onUpdateCartQty={handleUpdateCartQty} onRemoveFromCart={handleRemoveFromCart} onEmptyCart={handleEmptyCart} />
+                    </Route>
+                    <Route path="/Checkout" exact>
+                        <Route cart={cart} order={order} onCaptureCheckout={handleCaptureCheckout} error={errorMessage} />
+                    </Route>
+                </Routes>
+            </div>
 
-            <NavigationBar totalItems={cart.total_items}/>
-            <Routes>
 
-                <Route path='/' element={<Products products = {products} onAddToCart = {handelAddToCart}/>} />
-                <Route path='/cart' element={<Cart cart={cart}
-                                                   handleUpgradeCartQty ={handleUpgradeCartQty()}
-                                                                                handleRemoveFromCart ={handleRemoveFromCart()}
-                                                                                handleEmptyCart ={handleEmptyCart()}  />} />
+            <div >
+
+                <NavigationBar totalItems={cart.total_items}/>
+                <Routes>
+
+                    <Route path='/' element={<Products products = {products} />} />
+                    <Route path='/cart' element={<Cart cart={cart}
+
+                                                       handleRemoveFromCart ={handleRemoveFromCart}
+                                                       handleEmptyCart ={handleEmptyCart}  />} />
 
 
 
-            </Routes>
-        </div>
+                </Routes>
+            </div>
         </Router>
-
-
     );
-}
+};
 
 export default App;
